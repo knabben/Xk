@@ -18,7 +18,9 @@ type Client interface {
 	Send(cmd string) error
 	Join(channel string) error
 	Receive() error
+	SaveMessage(message *messages.Message)
 }
+
 type IRCClient struct {
 	Nick        string
 	Name        string
@@ -78,10 +80,7 @@ func (i *IRCClient) Receive() error {
 			case strings.Contains(r, "PRIVMSG"):
 				param := params(r)
 				message := messages.NewMessage(messages.NewUsers(param["Nickname"]), param["Message"], param["Channel"], time.Now())
-				if i.LastMessage != nil {
-					i.LastMessage.AddMessage(message)
-				}
-				i.LastMessage = message
+				i.SaveMessage(message)
 				fmt.Println(fmt.Sprintf("%s", message.String()))
 
 			case strings.Contains(r, "NOTICE * "):
@@ -90,6 +89,13 @@ func (i *IRCClient) Receive() error {
 			}
 		}
 	}
+}
+
+func (i *IRCClient) SaveMessage(message *messages.Message) {
+	if i.LastMessage != nil {
+		i.LastMessage.AddMessage(message)
+	}
+	i.LastMessage = message
 }
 
 func params(r string) (mapper map[string]string) {
